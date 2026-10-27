@@ -65,6 +65,15 @@ class TestVideoWriter(unittest.TestCase):
         self.assertEqual(images[0].max(), 0)
         self.assertEqual(images[1].max(), 255)
 
+    def test_percentile_clipping_saturates_outliers(self):
+        frame = np.zeros((16, 16))    # already a multiple of 16: no padding
+        frame[1:, :] = 100
+        frame[0, 0] = 10_000          # one hot voxel
+        image = VideoWriter.prepare([frame], clip_percentile=90)[0]
+        self.assertEqual(image[0, 0], 255)
+        self.assertEqual(image[5, 5], 255)   # 100 is the 90th percentile, not dark gray
+        self.assertEqual(image[0, 1], 0)
+
     def test_constant_frames_do_not_divide_by_zero(self):
         images = VideoWriter.prepare([np.full((3, 3), 7)])
         self.assertFalse(images[0].any())
