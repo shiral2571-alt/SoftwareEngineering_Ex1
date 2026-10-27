@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from Ex_1 import project_plane
+from projection import project_plane
 class TestProjection(unittest.TestCase):
 
     def test_rectangle_inside_constant_volume(self):

@@ -1,0 +1,47 @@
+"""Demo: project an NRRD volume onto every plane in a CSV and save an mp4.
+
+Usage:
+    python Ex0.py file.nrrd file.csv file.mp4 [--fps N]
+"""
+import argparse
+import sys
+import time
+
+from projection import FastProjector, Volume, VideoWriter, read_planes
+
+
+def parse_args(argv):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("nrrd", help="3D volume in NRRD format")
+    parser.add_argument("csv", help="planes: one per row, 9 (a,b,c) or 12 (a1,a2,b,c) numbers")
+    parser.add_argument("mp4", help="output video, one frame per plane")
+    parser.add_argument("--fps", type=float, default=10, help="video frame rate (default: 10)")
+    return parser.parse_args(argv)
+
+
+def main(argv=None) -> int:
+    args = parse_args(argv)
+    try:
+        volume = Volume.from_nrrd(args.nrrd)
+        print(f"Volume: {volume.shape} {volume.dtype}")
+
+        planes = read_planes(args.csv)
+        print(f"Planes: {len(planes)}")
+
+        projector = FastProjector()
+        start = time.perf_counter()
+        frames = [projector.project(volume, plane) for plane in planes]
+        elapsed = time.perf_counter() - start
+        print(f"Projected {len(frames)} frames in {elapsed:.3f}s "
+              f"({len(frames) / elapsed:.1f} fps)")
+
+        VideoWriter(fps=args.fps).write(frames, args.mp4)
+        print(f"Saved: {args.mp4}")
+    except (OSError, ValueError) as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
