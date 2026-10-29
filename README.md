@@ -101,8 +101,27 @@ docs/                      SRS, algorithm, design, testing, dataset, experiment
   so an invalid plane cannot exist anywhere in the program.
 * Each class has one responsibility. I/O (NRRD, CSV, mp4) is kept at the edges, so the core
   can be tested without files.
+* **`Volume` owns the memory layout:** pynrrd returns Fortran-ordered arrays. `Volume`
+  converts them once to C order, so `FastProjector` can use `M.ravel()` as a free view
+  instead of copying the volume on every frame.
+* **Errors are messages, not crashes:** library code raises `ValueError` with a precise
+  message, `read_planes` adds the CSV line number, and `Ex0.main` prints `Error: ...` and
+  returns exit code 1. `main(argv)` returns the code instead of calling `sys.exit`, so the
+  tests can call it directly.
 
-More details are in [docs/DESIGN.md](docs/DESIGN.md).
+| Module | Class / function | Responsibility |
+|---|---|---|
+| `plane.py` | `Plane` | Holds and validates the triangle/trapezoid; exposes its geometry |
+| `volume.py` | `Volume` | Read-only, C-contiguous 3D array plus NRRD header; `from_nrrd(path)` |
+| `projector.py` | `Projector` | Interface: `project(volume, plane) -> E` |
+| | `ReferenceProjector` | Loop translation of the algorithm (specification and test oracle) |
+| | `FastProjector` | Vectorized NumPy implementation (production) |
+| `plane_reader.py` | `read_planes(csv)` | CSV rows to `Plane` objects, with line-numbered errors |
+| `video.py` | `VideoWriter` | Intensity normalization, padding, mp4 encoding |
+| `Ex0.py` | `main(argv)` | CLI: wires the components, reports timing and errors |
+
+`projection.project_plane(M, a, b, c, a_second=None)` keeps the original function signature,
+so the first tests written for the single-file version still run unchanged.
 
 ## Results
 
@@ -131,7 +150,6 @@ The testing strategy is described in [docs/TESTING.md](docs/TESTING.md).
 |---|---|
 | [docs/SRS.md](docs/SRS.md) | Software Requirements Specification |
 | [docs/ALGORITHM.md](docs/ALGORITHM.md) | The projection algorithm in detail, with design decisions |
-| [docs/DESIGN.md](docs/DESIGN.md) | Classes, responsibilities, design choices |
 | [docs/TESTING.md](docs/TESTING.md) | Testing strategy, including the demo |
 | [docs/DATASET.md](docs/DATASET.md) | The NRRD data set |
 | [docs/EXPERIMENT.md](docs/EXPERIMENT.md) | Experiment and results |

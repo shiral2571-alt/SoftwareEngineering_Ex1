@@ -90,7 +90,7 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 | NFR-2 | **Correctness:** the optimized implementation shall produce output identical to the reference implementation. | Oracle test on 100 random planes |
 | NFR-3 | **Robustness:** no crash on any input; every error is a clear message. | Validation and end-to-end tests |
 | NFR-4 | **Memory:** per-frame memory is O(output pixels), independent of volume size; the volume is not copied per frame. | Design (C-contiguous volume, flat `take`) |
-| NFR-5 | **Maintainability:** modular object-oriented design, each class with one responsibility; the core is testable without files. | [DESIGN.md](DESIGN.md) |
+| NFR-5 | **Maintainability:** modular object-oriented design, each class with one responsibility; the core is testable without files. README, "Design overview" |
 | NFR-6 | **Portability:** pure Python + NumPy, no compiled extensions of our own. | |
 
 ## 5. Design decisions resolving the under-specified algorithm
