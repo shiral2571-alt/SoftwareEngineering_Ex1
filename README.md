@@ -153,3 +153,28 @@ The testing strategy is described in [docs/TESTING.md](docs/TESTING.md).
 | [docs/TESTING.md](docs/TESTING.md) | Testing strategy, including the demo |
 | [docs/DATASET.md](docs/DATASET.md) | The NRRD data set |
 | [docs/EXPERIMENT.md](docs/EXPERIMENT.md) | Experiment and results |
+
+## Use of AI tools
+
+AI tools were allowed in this course on the condition that the student fully understands
+the result. This project was developed with the help of Claude (Anthropic); commits it
+co-authored are marked `Co-Authored-By: Claude`.
+
+**Written by me:**
+* The first working implementation of the projection algorithm (the nested loops that are
+  now `ReferenceProjector`).
+* Plane input validation (zero-length and unequal legs).
+* Reading the planes CSV and writing the video, including the decision to normalize
+  intensities with one global window for the whole video.
+* The first 7 unit tests (`tests/test_project_plane.py`) and the first 500³ benchmark.
+
+**Written with AI assistance:**
+* `FastProjector`: the vectorized NumPy version that meets the FPS requirement.
+* The object-oriented structure (`Plane`, `Volume`, `Projector`, `VideoWriter`, `Ex0.py`),
+  extra validation rules (collinear points, trapezoid base and coplanarity), and the fix for
+  frames of different sizes in the video.
+* The additional tests (oracle, known-answer, performance, end-to-end), the documents in
+  `docs/`, and the experiment scripts and results.
+
+I reviewed all of the code and documents. The logic of the final implementation is the same
+as in my original loop version; the changes are in structure and performance.
