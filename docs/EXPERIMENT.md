@@ -15,42 +15,32 @@
 
 ```bash
 python experiments/make_planes.py
-python Ex0.py data/MRHead_1.nrrd data/planes_sweep.csv    results/sweep.mp4    --fps 15
-python Ex0.py data/MRHead_1.nrrd data/planes_rotate.csv   results/rotate.mp4   --fps 15
-python Ex0.py data/MRHead_1.nrrd data/planes_triangle.csv results/triangle.mp4 --fps 15
-python Ex0.py data/MRHead_1.nrrd data/planes_tumble.csv   results/tumble.mp4   --fps 15
-python Ex0.py data/MRHead_1.nrrd data/planes_sagittal5.csv results/sagittal5.mp4 --fps 2
+python Ex0.py data/MRHead_1.nrrd data/planes_tumble.csv results/tumble.mp4 --fps 15
 python experiments/make_previews.py
 python experiments/benchmark.py
 ```
 
-## Part 1: Videos
+The other plane files in `data/` (sweep, rotate, triangle, sagittal5) can be rendered the
+same way.
 
-| Video | Planes | Projection time | FPS | Preview |
-|---|---|---|---|---|
-| [sweep.mp4](../results/sweep.mp4) | 130 sagittal rectangles | 0.25 s | ~480–520 | ![](../results/sweep_preview.png) |
-| [rotate.mp4](../results/rotate.mp4) | 90 rotating rectangles | 0.24 s | ~380–390 | ![](../results/rotate_preview.png) |
-| [triangle.mp4](../results/triangle.mp4) | 60 rotating triangles | 0.18–0.20 s | ~300–330 | ![](../results/triangle_preview.png) |
-| [tumble.mp4](../results/tumble.mp4) | 120 squares turning freely in 3D | 0.14 s | ~880 | ![](../results/tumble_preview.png) |
-| [sagittal5.mp4](../results/sagittal5.mp4) | 5 sagittal rectangles | 0.02–0.03 s | ~160–310 | ![](../results/sagittal5_preview.png) |
+## Part 1: Video
+
+| Video | Planes | Projection time | FPS |
+|---|---|---|---|
+| [tumble.mp4](../results/tumble.mp4) | 120 squares turning freely in 3D | 0.14 s | ~880 |
+
+![Frames from tumble.mp4](../results/tumble_preview.png)
 
 Observations:
 
-* **Sweep:** moves from one side of the head (ear) through the mid-sagittal plane (corpus
-  callosum, brainstem, cerebellum, spine) to the other side. It is symmetric, as expected.
-* **Rotate:** at 0° the slice is sagittal, at 90° coronal (both hemispheres and the ventricles
-  visible), at 180° sagittal again but mirrored. This confirms that oblique planes work and
-  that the leg/row orientation is consistent.
-* **Triangle:** the same rotation with a triangle. The image is a centered triangle, narrow at
-  the top of the head and widening towards the neck, as defined by the algorithm (row `y`
-  has length `d12(y)`, centered by `off(y)`).
-* **Tumble:** a square through the head center whose rotation axis itself keeps changing
-  (two rotations at different speeds). The frames pass through sagittal, coronal, axial and
-  many oblique slices that no standard slice view shows. It is the fastest video because a
-  large part of each oblique square falls outside the narrow (130-voxel) left-right axis,
-  and those pixels all read index 0, which is always in the CPU cache.
-* Planes extend beyond the volume (300-voxel-wide rectangles in a 256×130 cross-section).
-  The outside parts are black (value 0), as required.
+* A 256×256 square through the head center, whose rotation axis itself keeps changing
+  (two rotations at different speeds). The frames pass through sagittal (first frame),
+  coronal, axial and many oblique slices that no standard slice view shows. The anatomy is
+  continuous from frame to frame, which confirms that oblique planes and the row/column
+  orientation are correct.
+* Parts of the oblique squares fall outside the narrow (130-voxel) left-right axis. They are
+  black (value 0), as required. These pixels all read index 0, which is always in the CPU
+  cache, so this video runs faster than straight slices of the same size.
 * Intensities: a global window [min, 99.5th percentile] keeps gray levels consistent across
   frames. Using the raw maximum made all frames dark, because a few very bright voxels
   stretched the scale.

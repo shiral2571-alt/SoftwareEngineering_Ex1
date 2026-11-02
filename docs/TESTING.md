@@ -25,8 +25,7 @@ python Ex0.py data/MRHead_1.nrrd data/planes_sagittal5.csv out.mp4 --fps 2
 ```
 
 Expected: `Volume: (256, 256, 130) int16`, `Planes: 5`, an FPS line, `Saved: out.mp4`, and a
-2.5-second video with 5 different sagittal slices (compare with
-`results/sagittal5_preview.png`).
+2.5-second video with 5 different sagittal slices.
 
 Error cases:
 

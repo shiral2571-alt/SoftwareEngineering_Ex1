@@ -2,7 +2,7 @@
 
 Introduction to Software Engineering: Ex1.
 
-![Rotating plane through MRHead](results/rotate_preview.png)
+![Frames from results/tumble.mp4](results/tumble_preview.png)
 
 ## Problem
 
@@ -23,7 +23,7 @@ Requirement: at least 30 frames per second on a 500×500×500 volume.
 
 ```bash
 pip install -r requirements.txt
-python Ex0.py data/MRHead_1.nrrd data/planes_rotate.csv rotate.mp4
+python Ex0.py data/MRHead_1.nrrd data/planes_tumble.csv tumble.mp4
 python -m unittest -v
 ```
 
@@ -38,7 +38,7 @@ projection/     the code: Plane, Volume, Projector, read_planes, VideoWriter
 tests/          unit, performance and end-to-end tests
 data/           MRHead_1.nrrd and plane CSV files
 experiments/    scripts that produced the results
-results/        output videos and benchmark
+results/        output video and benchmark
 docs/           SRS, algorithm, testing, dataset, experiment
 ```
 
@@ -49,7 +49,7 @@ docs/           SRS, algorithm, testing, dataset, experiment
 | 500³ volume (requirement ≥ 30) | 60–103 |
 | MRHead (256×256×130) | 300–520 |
 
-Videos are in [results/](results/). Details are in [docs/EXPERIMENT.md](docs/EXPERIMENT.md).
+The video is [results/tumble.mp4](results/tumble.mp4). Details are in [docs/EXPERIMENT.md](docs/EXPERIMENT.md).
 
 ## Documents
 
