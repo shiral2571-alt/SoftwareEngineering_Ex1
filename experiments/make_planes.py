@@ -21,11 +21,19 @@ def horizontal(angle_deg):
     return np.array([np.cos(t), 0.0, np.sin(t)])
 
 
-def rectangle(center, across, width):
+def rotation(axis, angle_deg):
+    """3x3 rotation matrix about `axis` (Rodrigues' formula)."""
+    k = np.asarray(axis, dtype=float) / np.linalg.norm(axis)
+    t = np.radians(angle_deg)
+    K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
+    return np.eye(3) + np.sin(t) * K + (1 - np.cos(t)) * K @ K
+
+
+def rectangle(center, across, width, down=DOWN):
     """Rectangle (special isosceles trapezoid) centered at `center`."""
-    a1 = center - HEIGHT / 2 * DOWN - width / 2 * across
-    a2 = center - HEIGHT / 2 * DOWN + width / 2 * across
-    return [a1, a2, a1 + HEIGHT * DOWN, a2 + HEIGHT * DOWN]
+    a1 = center - HEIGHT / 2 * down - width / 2 * across
+    a2 = center - HEIGHT / 2 * down + width / 2 * across
+    return [a1, a2, a1 + HEIGHT * down, a2 + HEIGHT * down]
 
 
 def triangle(center, across, width):
@@ -58,6 +66,15 @@ def main():
     #    rotating about the vertical axis, 60 frames
     fan = [triangle(CENTER, horizontal(angle), 300) for angle in np.linspace(0, 180, 60)]
     write_csv("planes_triangle.csv", fan)
+
+    # 4. Tumble: a plane through the head center turning freely in 3D.
+    #    Two rotations at different speeds, so the rotation axis itself keeps
+    #    changing and the plane is oblique in every frame, 120 frames
+    tumble = []
+    for t in np.linspace(0, 360, 120, endpoint=False):
+        R = rotation([0, 1, 0], t) @ rotation([1, 0, 1], t / 2)
+        tumble.append(rectangle(CENTER, R @ horizontal(0), 256, down=R @ DOWN))
+    write_csv("planes_tumble.csv", tumble)
 
 
 if __name__ == "__main__":
