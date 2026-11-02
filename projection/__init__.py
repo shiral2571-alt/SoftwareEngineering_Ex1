@@ -1,4 +1,4 @@
-"""Plane projection of a 3D volume (Software Engineering, Ex0)."""
+"""Plane projection of a 3D volume (Software Engineering, Ex1)."""
 from __future__ import annotations
 
 import numpy as np
