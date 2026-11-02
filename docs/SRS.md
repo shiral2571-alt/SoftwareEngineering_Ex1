@@ -56,7 +56,7 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 | ID | Requirement |
 |---|---|
 | FR-4 | Each point shall have exactly 3 finite coordinates. |
-| FR-5 | Leg lengths shall be > 0 and satisfy `|dist(a1,b) − dist(a2,c)| < EPS`. |
+| FR-5 | Leg lengths shall satisfy `|dist(a1,b) − dist(a2,c)| < EPS`, and be at least 1 voxel. Legs and base shall be at most 4096 voxels. |
 | FR-6 | The points shall not be collinear (they must span a plane). |
 | FR-7 | For a trapezoid: `dist(a1,a2) ≤ dist(b,c)` (+EPS), and `a2` lies within EPS of the plane through `a1, b, c`. |
 | FR-8 | An invalid plane shall be reported with its CSV line number and the reason, and the program shall exit with code 1 without writing a video. |
@@ -80,7 +80,7 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 | ID | Requirement |
 |---|---|
 | FR-16 | Usage: `python Ex0.py <file.nrrd> <file.csv> <file.mp4> [--fps N]`. A missing argument prints a usage message. |
-| FR-17 | A missing or unreadable file shall print `Error: ...` and exit with code 1 (no traceback). |
+| FR-17 | A missing, unreadable or corrupt file, an output name not ending in `.mp4`, a non-positive `--fps` or lack of memory shall print `Error: ...` and exit with code 1 (no traceback). |
 
 ## 4. Non-functional requirements
 
@@ -106,3 +106,4 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 | D7 | Coordinate space | Voxel indices | Assignment defines `M[x][y][z]` by index (assumption A1) |
 | D8 | Video intensity mapping | Global window [min, 99.5th percentile] | Consistent gray levels between frames, good contrast |
 | D9 | Frames of different sizes | Center-pad to a common size (multiple of 16) | Video requires a fixed size; scaling would distort the geometry |
+| D10 | Very small or very large planes | Reject legs < 1 voxel and sides > 4096 voxels | Legs < 1 give `⌊Dab⌋ = 0` rows (an empty image); 4096 is about twice the diagonal of the largest allowed volume, and larger planes would need gigabytes of memory |

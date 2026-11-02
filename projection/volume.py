@@ -29,7 +29,10 @@ class Volume:
     @classmethod
     def from_nrrd(cls, path: str) -> "Volume":
         import nrrd  # imported lazily so the core logic does not depend on pynrrd
-        data, header = nrrd.read(path)
+        try:
+            data, header = nrrd.read(path)
+        except nrrd.NRRDError as error:
+            raise ValueError(f"{path}: not a valid NRRD file ({error})") from None
         return cls(data, header)
 
     @property

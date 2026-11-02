@@ -21,6 +21,9 @@ def parse_args(argv):
 
 def main(argv=None) -> int:
     args = parse_args(argv)
+    if not args.mp4.lower().endswith(".mp4"):
+        print(f"Error: output file must end with .mp4, got {args.mp4}", file=sys.stderr)
+        return 1
     try:
         volume = Volume.from_nrrd(args.nrrd)
         print(f"Volume: {volume.shape} {volume.dtype}")
@@ -39,6 +42,9 @@ def main(argv=None) -> int:
         print(f"Saved: {args.mp4}")
     except (OSError, ValueError) as error:
         print(f"Error: {error}", file=sys.stderr)
+        return 1
+    except MemoryError:
+        print("Error: not enough memory (too many or too large planes)", file=sys.stderr)
         return 1
     return 0
 

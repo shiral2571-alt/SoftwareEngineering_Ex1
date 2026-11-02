@@ -75,6 +75,19 @@ class TestPlaneValidation(unittest.TestCase):
         with self.assertRaises(ValueError):
             Plane.triangle([0, 0, np.nan], [3, 4, 0], [-3, 4, 0])
 
+    def test_side_shorter_than_one_voxel(self):
+        # int(Dab) == 0 would give an image with no rows
+        with self.assertRaises(ValueError):
+            Plane.triangle([0, 0, 0], [0.5, 0.3, 0], [0.5, -0.3, 0])
+
+    def test_side_of_exactly_one_voxel_gives_one_row(self):
+        plane = Plane.triangle([0, 0, 0], [0.6, 0.8, 0], [-0.6, 0.8, 0])
+        self.assertEqual(plane.output_shape, (1, 2))
+
+    def test_plane_too_large(self):
+        with self.assertRaises(ValueError):
+            Plane.triangle([0, 0, 0], [3e6, 4e6, 0], [-3e6, 4e6, 0])
+
 
 if __name__ == "__main__":
     unittest.main()

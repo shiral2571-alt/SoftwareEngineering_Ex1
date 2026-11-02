@@ -73,6 +73,30 @@ class TestKnownAnswers(unittest.TestCase):
             self.assertTrue(np.all(np.diff(filled) >= 0))
 
 
+class TestVolumeValidation(unittest.TestCase):
+
+    def test_not_3d(self):
+        with self.assertRaises(ValueError):
+            Volume(np.zeros((4, 4), np.uint8))
+
+    def test_axis_of_1024_is_rejected_and_1023_accepted(self):
+        with self.assertRaises(ValueError):
+            Volume(np.zeros((1024, 1, 1), np.uint8))
+        Volume(np.zeros((1023, 1, 1), np.uint8))
+
+    def test_smallest_volume_1x1x1(self):
+        volume = Volume(np.full((1, 1, 1), 7, np.uint8))
+        plane = Plane.triangle([0, 0, 0], [0, 2, -1], [0, 2, 1])
+        for projector in (ReferenceProjector(), FastProjector()):
+            E = projector.project(volume, plane)
+            self.assertEqual(E[0, 0], 0)          # first sample is (0, 1, 0): outside
+            self.assertEqual(E.shape, plane.output_shape)
+
+    def test_non_numeric_voxels(self):
+        with self.assertRaises(ValueError):
+            Volume(np.zeros((2, 2, 2), dtype=bool))
+
+
 class TestFastMatchesReference(unittest.TestCase):
     """Oracle test: the optimized projector must equal the readable one."""
 

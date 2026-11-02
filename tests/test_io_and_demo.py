@@ -125,6 +125,30 @@ class TestDemoEndToEnd(TempDirTestCase):
         self.assertEqual(code, 1)
         self.assertIn("line 1", err)
 
+    def assert_clean_error(self, *args):
+        code, _, err = self.run_main(*args)
+        self.assertEqual(code, 1)
+        self.assertTrue(err.startswith("Error:"), err)
+
+    def test_corrupt_nrrd_file(self):
+        csv_path = self.write_file("planes.csv", "0,0,0,3,4,0,-3,4,0\n")
+        bad_nrrd = self.write_file("bad.nrrd", "this is not an nrrd file")
+        self.assert_clean_error(bad_nrrd, csv_path, os.path.join(self.dir, "o.mp4"))
+
+    def test_tiny_and_huge_planes(self):
+        for row in ["0,0,0,0.5,0.3,0,0.5,-0.3,0", "0,0,0,0,1e7,1e7,0,1e7,-1e7"]:
+            with self.subTest(row=row):
+                csv_path = self.write_file("planes.csv", row + "\n")
+                self.assert_clean_error(self.make_volume(), csv_path,
+                                        os.path.join(self.dir, "o.mp4"))
+
+    def test_bad_output_and_fps(self):
+        csv_path = self.write_file("planes.csv", "0,0,0,3,4,0,-3,4,0\n")
+        volume = self.make_volume()
+        self.assert_clean_error(volume, csv_path, os.path.join(self.dir, "o.txt"))
+        self.assert_clean_error(volume, csv_path, os.path.join(self.dir, "no", "o.mp4"))
+        self.assert_clean_error(volume, csv_path, os.path.join(self.dir, "o.mp4"), "--fps", "0")
+
 
 if __name__ == "__main__":
     unittest.main()

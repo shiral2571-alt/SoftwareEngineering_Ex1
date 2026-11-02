@@ -6,6 +6,8 @@ from typing import Sequence
 import numpy as np
 
 EPS = 0.001
+MIN_SIDE = 1.0      # shorter legs give int(Dab) == 0 rows: an empty image
+MAX_SIDE = 4096.0   # about 2x the diagonal of the largest allowed volume (1023^3)
 
 
 class Plane:
@@ -117,6 +119,13 @@ class Plane:
         if abs(d_ab - d_ac) >= EPS:
             raise ValueError(f"Side lengths must differ by less than {EPS} "
                              f"(got {d_ab:.4f} and {d_ac:.4f})")
+        if d_ab < MIN_SIDE:
+            raise ValueError(f"Side length must be at least {MIN_SIDE:g} voxel "
+                             f"(got {d_ab:.4f}), otherwise the image has no rows")
+        d_bc = np.linalg.norm(c - b)
+        if max(d_ab, d_bc) > MAX_SIDE:
+            raise ValueError(f"Plane is too large: sides must be at most {MAX_SIDE:g} voxels "
+                             f"(got {d_ab:.1f} and {d_bc:.1f})")
 
         normal = np.cross(b - a1, c - a1)
         normal_length = np.linalg.norm(normal)
