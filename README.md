@@ -1,6 +1,6 @@
 # Plane Projection of a 3D Volume
 
-Introduction to Software Engineering: Ex1.
+Introduction to Software Engineering: Ex0.
 
 ![Frames from results/tumble.mp4](results/tumble_preview.png)
 
