@@ -50,7 +50,7 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 |---|---|
 | FR-1 | The system shall load a 3D volume from an NRRD file. |
 | FR-2 | The system shall accept volumes with `1 ≤ sx, sy, sz < 2^10` and 8/16/32-bit integer voxels (other numeric types are accepted too). Other shapes are rejected. |
-| FR-3 | The system shall read planes from a CSV file, one plane per row: 9 values (triangle `a,b,c`) or 12 values (trapezoid `a1,a2,b,c`). Blank lines are ignored and a non-numeric first row is treated as a header. |
+| FR-3 | The system shall read planes from a CSV file, one plane per row: 9 values (triangle `a,b,c`) or 12 values (trapezoid `a1,a2,b,c`), separated by commas, semicolons, tabs or spaces. Blank lines are ignored and a first row containing letters is treated as a header. |
 
 ### Validation
 | ID | Requirement |
@@ -72,7 +72,7 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 | ID | Requirement |
 |---|---|
 | FR-12 | The system shall write an mp4 file with exactly one frame per CSV row, in CSV order. |
-| FR-13 | Frames shall be converted to 8-bit gray with one global intensity window for the whole video (minimum value to the 99.5th percentile), so equal voxel values look the same in every frame. |
+| FR-13 | Frames shall be converted to 8-bit gray with one global intensity window for the whole video (minimum value to the 99.5th percentile), so equal voxel values look the same in every frame. NaN voxels (float volumes) are shown black. |
 | FR-14 | Frames of different sizes shall be centered on a common canvas (padded with 0) whose sides are multiples of 16. |
 | FR-15 | The program shall print the volume shape/type, the number of planes, the projection time and FPS. |
 
@@ -80,7 +80,7 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 | ID | Requirement |
 |---|---|
 | FR-16 | Usage: `python Ex0.py <file.nrrd> <file.csv> <file.mp4> [--fps N]`. A missing argument prints a usage message. |
-| FR-17 | A missing, unreadable or corrupt file, an output name not ending in `.mp4`, a non-positive `--fps` or lack of memory shall print `Error: ...` and exit with code 1 (no traceback). |
+| FR-17 | A missing, unreadable or corrupt file, an output name not ending in `.mp4`, an `--fps` outside 0.1–1000 (including NaN and infinity) or lack of memory shall print `Error: ...` and exit with code 1 (no traceback). |
 
 ## 4. Non-functional requirements
 

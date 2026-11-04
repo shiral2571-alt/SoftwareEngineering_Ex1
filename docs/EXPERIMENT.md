@@ -48,18 +48,25 @@ Observations:
 ## Part 2: Performance
 
 From [results/benchmark.md](../results/benchmark.md) (each value is the mean over ≥ 1 s of
-repeated projections, after one warm-up call):
+repeated projections, after one warm-up call). This run was made while other programs
+(browser, IDE) were busy: the reference ran at 9.8 FPS, against 24.5 FPS on a quiet machine,
+so all numbers are about 2× lower than the machine can do.
 
-| Implementation / plane | Volume | Output | FPS |
+| Implementation / plane | Volume | Output | FPS (busy machine) |
 |---|---|---|---:|
-| Fast, oblique triangle | 128³ uint8 | 143×129 | 2,422 |
-| Fast, oblique triangle | 256³ uint8 | 286×257 | 375 |
-| Fast, oblique triangle | **500³ uint8** | 559×501 | **83.5** |
-| Fast, oblique triangle | 750³ uint8 | 838×751 | 34.6 |
-| Fast, oblique triangle | 500³ uint16 | 559×501 | 103.2 |
-| Fast, oblique triangle | 500³ uint32 | 559×501 | 102.3 |
-| Fast, axis-aligned square | 500³ uint8 | 499×500 | 59.9 |
-| Reference (loops), oblique triangle | 128³ uint8 | 143×129 | 24.5 |
+| Fast, oblique triangle | 128³ uint8 | 143×129 | 2,373 |
+| Fast, oblique triangle | 256³ uint8 | 286×257 | 523 |
+| Fast, oblique triangle | **500³ uint8** | 559×501 | **103.7** |
+| Fast, oblique triangle | 750³ uint8 | 838×751 | 20.7 |
+| Fast, oblique triangle | 500³ uint16 | 559×501 | 51.1 |
+| Fast, oblique triangle | 500³ uint32 | 559×501 | 48.3 |
+| Fast, axis-aligned square | 500³ uint8 | 499×500 | 43.9 |
+| Reference (loops), oblique triangle | 128³ uint8 | 143×129 | 9.8 |
+
+On a quiet machine the same 500³ oblique plane reached **137 FPS (uint8)** and **147 FPS
+(uint16)**. The same code measured right after a busy period gave as little as ~50 FPS, so
+single numbers vary by up to 3× with CPU load and turbo frequency; the minimum over all runs
+was still above 30 FPS.
 
 Earlier versions on the same 500³ oblique plane:
 
@@ -67,24 +74,27 @@ Earlier versions on the same 500³ oblique plane:
 |---|---:|
 | First implementation (Python loops, accumulating `p += dp`) | 2–5 |
 | First NumPy version (H×W×3 float64 array, boolean scatter) | ~29 |
-| Final `FastProjector` (gather, float32 per axis, int32 flat index, `take`) | 60–103 |
+| Gather, float32 per axis, int32 flat index, `take` | 60–175 |
+| Final `FastProjector`: the same with float64 coordinates (identical to the reference) | 44–147 |
 
 ## Conclusions
 
-* **The requirement is met:** 60–103 FPS on 500³ (requirement ≥ 30, 2–3.5× margin), and
-  around 100 FPS for 16/32-bit volumes. It is tested automatically (`TestPerformance`).
+* **The requirement is met:** 44–147 FPS on 500³ depending on CPU load (requirement ≥ 30),
+  above 100 FPS on a quiet machine. It is tested automatically (`TestPerformance`).
+* **Correctness was preferred over the last 15%:** float32 coordinates were faster but differed
+  from the reference by one pixel on some long planes. float64 makes the two identical.
 * **Run time depends on the number of output pixels, not on the volume:** MRHead frames
-  (~256×300) run at 300–500 FPS. Even 750³ (output 838×751) stays above 30 FPS.
+  (~256×300) run at 300–900 FPS.
 * **Memory access matters at large sizes:** the axis-aligned square at `z = 250` is *slower*
   than the oblique plane, even though it has a similar number of pixels. Along its rows only
   axis 0 changes, which is the slowest axis in C order, so consecutive samples are 250,000
   bytes apart and miss the CPU cache. Also, every pixel of the square is inside the volume,
   while about half of the triangle's canvas is empty.
 * **Vectorizing alone was not enough:** the first NumPy version reached only 29 FPS because
-  of large temporary arrays. Reducing memory traffic (gather instead of scatter, float32, one
-  axis at a time) gave the remaining factor of 3.
-* **The optimization is safe:** the fast and reference implementations are identical on all
-  100 random planes of the oracle test (and on ~1 M random pixels during development).
+  of large temporary arrays. Reducing memory traffic (gather instead of scatter, one axis at a
+  time) gave the remaining speed-up.
+* **The optimization is safe:** the fast and reference implementations are identical on the
+  100 random planes of the oracle test and on long planes from far outside the volume.
 
 ## Possible improvements
 

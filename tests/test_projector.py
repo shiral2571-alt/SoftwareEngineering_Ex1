@@ -110,6 +110,25 @@ class TestFastMatchesReference(unittest.TestCase):
                 np.testing.assert_array_equal(fast.project(volume, plane),
                                               reference.project(volume, plane))
 
+    def test_long_planes_from_far_away(self):
+        # 2500-voxel legs. Planes 12 and 113 of this sequence came out different
+        # (one pixel each) when FastProjector computed coordinates in float32.
+        rng = np.random.default_rng(7)
+        volume = Volume(rng.integers(0, 60000, (64, 80, 48), dtype=np.uint16))
+        reference, fast = ReferenceProjector(), FastProjector()
+        for i in range(120):
+            origin = rng.uniform(-1500, -1000, 3)
+            u = np.array([32, 40, 24]) - origin
+            u /= np.linalg.norm(u)
+            w = np.cross(u, [0, 0, 1.0])
+            w /= np.linalg.norm(w)
+            plane = Plane.triangle(origin, origin + 2500 * u - 60 * w, origin + 2500 * u + 60 * w)
+            if i not in (0, 12, 113):
+                continue        # the reference is slow on 2500-row planes
+            with self.subTest(plane=plane):
+                np.testing.assert_array_equal(fast.project(volume, plane),
+                                              reference.project(volume, plane))
+
 
 class TestPerformance(unittest.TestCase):
     """Requirement NFR-1: at least 30 frames per second on a 500^3 volume."""

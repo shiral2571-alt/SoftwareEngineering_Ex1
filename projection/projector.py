@@ -66,9 +66,11 @@ class FastProjector(Projector):
 
     Instead of scattering every sample p to its column x, it gathers: for each
     output pixel (y, x) it computes the x1 = x - offset(y) that lands there.
-    Coordinates are computed one axis at a time in float32 into a reused
-    buffer, combined into a flat int32 index (sx*sy*sz < 2^30), and sampled
-    with a single `take` call.
+    Coordinates are computed one axis at a time into a reused buffer,
+    combined into a flat int32 index (sx*sy*sz < 2^30), and sampled with a
+    single `take` call. Coordinates use float64 with the same operations as
+    the reference (a1 + x1*dp, round half to even), so both give identical
+    images; float32 was ~15% faster but rounded a few pixels differently.
     """
 
     def project(self, volume: Volume, plane: Plane) -> np.ndarray:
@@ -88,12 +90,12 @@ class FastProjector(Projector):
         x1 = np.arange(width, dtype=np.int32)[None, :] - offset[:, None]
         valid = (x1 >= 0) & (x1 <= d12[:, None].astype(np.int32)) & (d12[:, None] > 0)
 
-        x1f = x1.astype(np.float32)
+        x1f = x1.astype(np.float64)
         flat = np.zeros((height, width), dtype=np.int32)
-        coord = np.empty((height, width), dtype=np.float32)
+        coord = np.empty((height, width), dtype=np.float64)
         for axis, size in enumerate(M.shape):
-            np.multiply(x1f, np.float32(dp[:, axis])[:, None], out=coord)
-            coord += np.float32(A1[:, axis])[:, None]
+            np.multiply(x1f, dp[:, axis][:, None], out=coord)
+            coord += A1[:, axis][:, None]
             np.rint(coord, out=coord)
             valid &= (coord >= 0) & (coord < size)
             flat *= size

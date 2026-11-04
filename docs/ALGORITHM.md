@@ -74,9 +74,12 @@ A pure Python loop costs about 1 µs per pixel, which gives ~2–5 FPS for a 500
    every output pixel `(y, x)` which sample lands there: `x1 = x − off[y]`. A pixel is valid if
    `0 ≤ x1 ≤ floor(d12[y])`. Every pixel is then computed independently, with no write
    conflicts.
-3. **One axis at a time in float32:** the coordinate of axis `k` is `P1[y,k] + x1·dp[y,k]`.
-   It is computed into one reused H×W float32 buffer, instead of an H×W×3 float64 array.
-   This reduces memory traffic about 6×.
+3. **One axis at a time:** the coordinate of axis `k` is `P1[y,k] + x1·dp[y,k]`. It is
+   computed into one reused H×W float64 buffer, instead of an H×W×3 array, which reduces
+   memory traffic about 3×. It uses float64 and the same operations as the reference
+   (`a1 + x1·dp`, round half to even), so the two give identical images. A float32 buffer was
+   about 15% faster, but on long planes (thousands of voxels) its rounding error picked a
+   neighbouring voxel for about one pixel per plane.
 4. **Flat index:** `flat = (i·sy + j)·sz + k` in int32 (safe because `sx·sy·sz < 2^30`). The
    volume is stored C-contiguous once, so `M.ravel()` is a view and one `take(flat)` reads all
    voxels.

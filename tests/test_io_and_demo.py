@@ -51,6 +51,19 @@ class TestReadPlanes(TempDirTestCase):
         with self.assertRaises(ValueError):
             read_planes(self.write_file("p.csv", "\n\n"))
 
+    def test_semicolons_tabs_and_spaces(self):
+        path = self.write_file("p.csv", "0;0;0;3;4;0;-3;4;0\n"
+                                        "0\t0\t0\t3\t4\t0\t-3\t4\t0\n"
+                                        " 0 , 0 ,0, 3,4,0 ,-3,4,0 \r\n")
+        self.assertEqual(len(read_planes(path)), 3)
+
+    def test_trailing_comma_is_an_error(self):
+        for text, line in [("0,0,0,3,4,0,-3,4,0\n0,0,0,3,4,0,-3,4,0,\n", "line 2"),
+                           ("0,0,0,3,4,0,-3,4,0,\n", "line 1")]:   # not mistaken for a header
+            path = self.write_file("p.csv", text)
+            with self.subTest(text=text), self.assertRaisesRegex(ValueError, line):
+                read_planes(path)
+
 
 class TestVideoWriter(unittest.TestCase):
 
@@ -77,6 +90,19 @@ class TestVideoWriter(unittest.TestCase):
     def test_constant_frames_do_not_divide_by_zero(self):
         images = VideoWriter.prepare([np.full((3, 3), 7)])
         self.assertFalse(images[0].any())
+
+    def test_nan_voxels_are_black_and_do_not_spoil_the_window(self):
+        frame = np.full((16, 16), 50.0)
+        frame[0, 0] = np.nan
+        frame[0, 1] = 100.0
+        image = VideoWriter.prepare([frame])[0]
+        self.assertEqual(image[0, 0], 0)
+        self.assertEqual(image[0, 1], 255)
+
+    def test_invalid_fps(self):
+        for fps in (0, -5, 0.01, float("nan"), float("inf"), 10_000):
+            with self.subTest(fps=fps), self.assertRaises(ValueError):
+                VideoWriter(fps=fps)
 
     def test_pad_is_centered(self):
         padded = pad_to_size(np.ones((2, 2), np.uint8), 4, 6)

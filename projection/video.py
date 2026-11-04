@@ -4,6 +4,7 @@ from __future__ import annotations
 import numpy as np
 
 MACRO_BLOCK = 16
+MIN_FPS, MAX_FPS = 0.1, 1000   # ffmpeg rejects rates that print as 0.00
 
 
 class VideoWriter:
@@ -18,8 +19,8 @@ class VideoWriter:
     """
 
     def __init__(self, fps: float = 10, clip_percentile: float = 99.5):
-        if fps <= 0:
-            raise ValueError("fps must be positive")
+        if not MIN_FPS <= fps <= MAX_FPS:   # also rejects nan and inf
+            raise ValueError(f"fps must be between {MIN_FPS:g} and {MAX_FPS:g}, got {fps}")
         if not 0 < clip_percentile <= 100:
             raise ValueError("clip_percentile must be in (0, 100]")
         self.fps = fps
@@ -35,6 +36,9 @@ class VideoWriter:
         """Normalize to uint8 and pad to a common size (no I/O, testable)."""
         if not frames:
             raise ValueError("No frames to write")
+        # NaN voxels (possible in float volumes) are shown as black
+        frames = [np.nan_to_num(frame.astype(np.float64), nan=0.0, posinf=0.0, neginf=0.0)
+                  if frame.dtype.kind == "f" else frame for frame in frames]
 
         low = min(float(frame.min()) for frame in frames)
         if clip_percentile < 100:

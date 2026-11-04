@@ -34,7 +34,7 @@ def main(argv=None) -> int:
         projector = FastProjector()
         start = time.perf_counter()
         frames = [projector.project(volume, plane) for plane in planes]
-        elapsed = time.perf_counter() - start
+        elapsed = max(time.perf_counter() - start, 1e-9)
         print(f"Projected {len(frames)} frames in {elapsed:.3f}s "
               f"({len(frames) / elapsed:.1f} fps)")
 
