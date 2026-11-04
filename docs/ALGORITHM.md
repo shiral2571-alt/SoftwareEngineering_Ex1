@@ -85,6 +85,12 @@ A pure Python loop costs about 1 µs per pixel, which gives ~2–5 FPS for a 500
    voxels.
 5. **Masking:** out-of-volume or out-of-row pixels get index 0 (always valid) and are
    multiplied by 0 afterwards. There is no boolean-indexing copy.
+6. **Row blocks on a thread pool:** steps 2–5 run on blocks of rows of about 32,768 pixels.
+   The temporary arrays of one block (~1 MB) stay in the CPU cache instead of going to RAM
+   between NumPy operations. Because of the gather design every block writes only its own
+   rows of `E`, so blocks are independent and run on up to 4 threads; NumPy releases the
+   Python GIL inside array operations, so the threads really run in parallel. The result does
+   not depend on the number of threads.
 
 The two implementations are compared pixel by pixel on random planes in the test suite
 (see [TESTING.md](TESTING.md)).

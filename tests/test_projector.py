@@ -110,6 +110,20 @@ class TestFastMatchesReference(unittest.TestCase):
                 np.testing.assert_array_equal(fast.project(volume, plane),
                                               reference.project(volume, plane))
 
+    def test_many_blocks_and_threads(self):
+        # tiny blocks force every plane to be split over several threads
+        rng = np.random.default_rng(99)
+        volume = Volume(rng.integers(0, 256, (40, 50, 30), dtype=np.uint8))
+        reference = ReferenceProjector()
+        for threads in (1, 4):
+            fast = FastProjector(threads=threads)
+            fast.BLOCK_PIXELS = 50
+            for _ in range(20):
+                plane = random_plane(rng)
+                with self.subTest(threads=threads, plane=plane):
+                    np.testing.assert_array_equal(fast.project(volume, plane),
+                                                  reference.project(volume, plane))
+
     def test_long_planes_from_far_away(self):
         # 2500-voxel legs. Planes 12 and 113 of this sequence came out different
         # (one pixel each) when FastProjector computed coordinates in float32.

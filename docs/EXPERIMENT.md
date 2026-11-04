@@ -48,43 +48,56 @@ Observations:
 ## Part 2: Performance
 
 From [results/benchmark.md](../results/benchmark.md) (each value is the mean over ≥ 1 s of
-repeated projections, after one warm-up call), measured on an idle laptop running on battery:
+repeated projections, after one warm-up call), measured on an idle laptop (12 logical cores)
+running on battery:
 
 | Implementation / plane | Volume | Output | FPS |
 |---|---|---|---:|
-| Fast, oblique triangle | 128³ uint8 | 143×129 | 1,452 |
-| Fast, oblique triangle | 256³ uint8 | 286×257 | 332 |
-| Fast, oblique triangle | **500³ uint8** | 559×501 | **89.7** |
-| Fast, oblique triangle | 750³ uint8 | 838×751 | 35.6 |
-| Fast, oblique triangle | 500³ uint16 | 559×501 | 91.0 |
-| Fast, oblique triangle | 500³ uint32 | 559×501 | 91.2 |
-| Fast, axis-aligned square | 500³ uint8 | 499×500 | 63.0 |
-| Reference (loops), oblique triangle | 128³ uint8 | 143×129 | 27.6 |
+| Fast, oblique triangle | 128³ uint8 | 143×129 | 1,365 |
+| Fast, oblique triangle | 256³ uint8 | 286×257 | 457 |
+| Fast, oblique triangle | **500³ uint8** | 559×501 | **173.3** |
+| Fast, oblique triangle | 750³ uint8 | 838×751 | 88.0 |
+| Fast, oblique triangle | 500³ uint16 | 559×501 | 188.0 |
+| Fast, oblique triangle | 500³ uint32 | 559×501 | 176.1 |
+| Fast, axis-aligned square | 500³ uint8 | 499×500 | 163.8 |
+| Fast, 1 thread (row blocks only), oblique triangle | 500³ uint8 | 559×501 | 142.6 |
+| Fast, 1 thread (row blocks only), axis-aligned square | 500³ uint8 | 499×500 | 88.0 |
+| Reference (loops), oblique triangle | 128³ uint8 | 143×129 | 24.0 |
 
-Stability: five repeated 1-second runs of each 500³ case gave 61–93 FPS (medians 72–93), so
-the slowest run is still 2× the requirement. Single numbers depend on CPU load and power
-mode: with the browser and IDE busy, runs dropped to ~45 FPS; short bursts at full turbo
-reached ~140 FPS.
+Stability: five repeated 1-second runs of each 500³ case (uint8/16/32, oblique and
+axis-aligned) gave **163–192 FPS**, so every run is above the 100 FPS target. Single numbers
+depend on CPU load and power mode (with a busy browser and IDE, earlier versions lost up to
+half of their speed).
 
-Earlier versions on the same 500³ oblique plane:
+Versions on the same 500³ oblique plane:
 
 | Version | FPS |
 |---|---:|
 | First implementation (Python loops, accumulating `p += dp`) | 2–5 |
 | First NumPy version (H×W×3 float64 array, boolean scatter) | ~29 |
-| Gather, float32 per axis, int32 flat index, `take` | 60–175 |
-| Final `FastProjector`: the same with float64 coordinates (identical to the reference) | 61–93 (idle) |
+| Gather, float32 per axis, int32 flat index, `take`, whole frame at once | 60–175 |
+| The same with float64 coordinates (identical to the reference) | 61–93 |
+| + row blocks of 32,768 pixels (one thread) | ~120–143 |
+| **Final: + blocks on a pool of 4 threads** | **163–192** |
 
 ## Conclusions
 
-* **The requirement is met:** 61–93 FPS on 500³ on an idle machine (requirement ≥ 30, a
-  2–3× margin), close to the 100 FPS target. It is tested automatically (`TestPerformance`).
-* **Correctness was preferred over the last 15%:** float32 coordinates were faster but differed
-  from the reference by one pixel on some long planes. float64 makes the two identical.
+* **The requirement and the target are met:** 163–192 FPS on 500³ (requirement ≥ 30,
+  expected 100), in every repeated run. The requirement is tested automatically
+  (`TestPerformance`).
+* **Cache size matters more than arithmetic:** splitting the frame into blocks of rows, with
+  no other change, made it ~1.3–1.5× faster, because the temporary arrays of a block (~1 MB)
+  stay in the CPU cache between NumPy operations instead of going through RAM.
+* **Threads work because of the gather design:** each block writes only its own rows, so blocks
+  need no locks, and NumPy releases the GIL inside array operations. Four threads gave another
+  ~1.3–2×; more threads did not help (memory bandwidth is shared).
+* **Correctness was preferred over 15%:** float32 coordinates were faster but differed from the
+  reference by one pixel on some long planes. float64 makes the two identical.
 * **Run time depends on the number of output pixels, not on the volume:** MRHead frames
-  (~256×300) run at 300–900 FPS.
-* **Memory access matters at large sizes:** the axis-aligned square at `z = 250` is *slower*
-  than the oblique plane, even though it has a similar number of pixels. Along its rows only
+  (~256×300) run at 300–550 FPS.
+* **Memory access matters at large sizes:** on one thread the axis-aligned square at `z = 250`
+  is much *slower* than the oblique plane (88 vs 143 FPS), even though it has a similar number
+  of pixels; with 4 threads the gap almost disappears. Along its rows only
   axis 0 changes, which is the slowest axis in C order, so consecutive samples are 250,000
   bytes apart and miss the CPU cache. Also, every pixel of the square is inside the volume,
   while about half of the triangle's canvas is empty.
@@ -92,7 +105,8 @@ Earlier versions on the same 500³ oblique plane:
   of large temporary arrays. Reducing memory traffic (gather instead of scatter, one axis at a
   time) gave the remaining speed-up.
 * **The optimization is safe:** the fast and reference implementations are identical on the
-  100 random planes of the oracle test and on long planes from far outside the volume.
+  100 random planes of the oracle test, on long planes from far outside the volume, with
+  1 or 4 threads and with tiny blocks, and on the real MRHead plane files.
 
 ## Possible improvements
 

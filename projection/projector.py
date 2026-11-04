@@ -15,7 +15,9 @@ FastProjector is the vectorized NumPy version used in production.
 """
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 
@@ -62,7 +64,7 @@ class ReferenceProjector(Projector):
 
 
 class FastProjector(Projector):
-    """Vectorized implementation: all pixels of a frame are computed at once.
+    """Vectorized implementation: whole blocks of pixels are computed at once.
 
     Instead of scattering every sample p to its column x, it gathers: for each
     output pixel (y, x) it computes the x1 = x - offset(y) that lands there.
@@ -71,7 +73,20 @@ class FastProjector(Projector):
     single `take` call. Coordinates use float64 with the same operations as
     the reference (a1 + x1*dp, round half to even), so both give identical
     images; float32 was ~15% faster but rounded a few pixels differently.
+
+    The frame is split into blocks of rows of about BLOCK_PIXELS pixels: the
+    temporary arrays of one block fit in the CPU cache (~1.3x faster), and
+    blocks are independent (each writes its own rows of E), so they run on a
+    small thread pool. NumPy releases the GIL inside its array operations, so
+    the threads really run in parallel (~1.5x more).
     """
+
+    BLOCK_PIXELS = 32768
+
+    def __init__(self, threads: int | None = None):
+        if threads is None:
+            threads = min(4, os.cpu_count() or 1)
+        self._pool = ThreadPoolExecutor(threads) if threads > 1 else None
 
     def project(self, volume: Volume, plane: Plane) -> np.ndarray:
         M = volume.data
@@ -85,24 +100,41 @@ class FastProjector(Projector):
 
         d12 = np.linalg.norm(A2 - A1, axis=1)
         dp = (A2 - A1) / np.where(d12 > 0, d12, 1)[:, None]
-
         offset = ((d_bc - d12) / 2).astype(np.int32)
-        x1 = np.arange(width, dtype=np.int32)[None, :] - offset[:, None]
-        valid = (x1 >= 0) & (x1 <= d12[:, None].astype(np.int32)) & (d12[:, None] > 0)
 
-        x1f = x1.astype(np.float64)
-        flat = np.zeros((height, width), dtype=np.int32)
-        coord = np.empty((height, width), dtype=np.float64)
-        for axis, size in enumerate(M.shape):
-            np.multiply(x1f, dp[:, axis][:, None], out=coord)
-            coord += A1[:, axis][:, None]
-            np.rint(coord, out=coord)
-            valid &= (coord >= 0) & (coord < size)
-            flat *= size
-            flat += coord.astype(np.int32)
+        E = np.empty((height, width), dtype=M.dtype)
+        rows = max(1, self.BLOCK_PIXELS // width)
+        blocks = [slice(start, min(start + rows, height)) for start in range(0, height, rows)]
 
-        # invalid pixels read index 0 (always safe) and are then zeroed
-        flat *= valid
-        E = M.ravel().take(flat)
-        E *= valid
+        def project_block(b):
+            _project_rows(M, A1[b], dp[b], offset[b], d12[b], E[b])
+
+        if self._pool is not None and len(blocks) > 1:
+            list(self._pool.map(project_block, blocks))
+        else:
+            for b in blocks:
+                project_block(b)
         return E
+
+
+def _project_rows(M, A1, dp, offset, d12, out) -> None:
+    """Fill `out` (a block of rows of E) for rows with these per-row values."""
+    height, width = out.shape
+    x1 = np.arange(width, dtype=np.int32)[None, :] - offset[:, None]
+    valid = (x1 >= 0) & (x1 <= d12[:, None].astype(np.int32)) & (d12[:, None] > 0)
+
+    x1f = x1.astype(np.float64)
+    flat = np.zeros((height, width), dtype=np.int32)
+    coord = np.empty((height, width), dtype=np.float64)
+    for axis, size in enumerate(M.shape):
+        np.multiply(x1f, dp[:, axis][:, None], out=coord)
+        coord += A1[:, axis][:, None]
+        np.rint(coord, out=coord)
+        valid &= (coord >= 0) & (coord < size)
+        flat *= size
+        flat += coord.astype(np.int32)
+
+    # invalid pixels read index 0 (always safe) and are then zeroed
+    flat *= valid
+    np.take(M.ravel(), flat, out=out)
+    out *= valid

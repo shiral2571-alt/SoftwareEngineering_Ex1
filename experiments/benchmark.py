@@ -58,6 +58,12 @@ def main():
     square = Plane.trapezoid([0, 0, 250], [499, 0, 250], [0, 499, 250], [499, 499, 250])
     add("Fast, axis-aligned square", constant, square)
 
+    print("Single thread (row blocks only), for comparison:")
+    single = FastProjector(threads=1)
+    add("Fast 1 thread, oblique triangle", random_volume(500, np.uint8), oblique_triangle(500),
+        single)
+    add("Fast 1 thread, axis-aligned square", constant, square, single)
+
     print("Reference (loop) implementation, for comparison:")
     add("Reference, oblique triangle", random_volume(128, np.uint8), oblique_triangle(128),
         ReferenceProjector())
