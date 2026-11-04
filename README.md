@@ -46,7 +46,7 @@ docs/           SRS, algorithm, testing, dataset, experiment
 
 | | FPS |
 |---|---:|
-| 500³ volume (requirement ≥ 30) | 44–147 (above 100 on a quiet machine) |
+| 500³ volume (requirement ≥ 30) | 61–93 |
 | MRHead (256×256×130) | 300–900 |
 
 The video is [results/tumble.mp4](results/tumble.mp4). Details are in [docs/EXPERIMENT.md](docs/EXPERIMENT.md).

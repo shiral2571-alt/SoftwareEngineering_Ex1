@@ -48,25 +48,23 @@ Observations:
 ## Part 2: Performance
 
 From [results/benchmark.md](../results/benchmark.md) (each value is the mean over ≥ 1 s of
-repeated projections, after one warm-up call). This run was made while other programs
-(browser, IDE) were busy: the reference ran at 9.8 FPS, against 24.5 FPS on a quiet machine,
-so all numbers are about 2× lower than the machine can do.
+repeated projections, after one warm-up call), measured on an idle laptop running on battery:
 
-| Implementation / plane | Volume | Output | FPS (busy machine) |
+| Implementation / plane | Volume | Output | FPS |
 |---|---|---|---:|
-| Fast, oblique triangle | 128³ uint8 | 143×129 | 2,373 |
-| Fast, oblique triangle | 256³ uint8 | 286×257 | 523 |
-| Fast, oblique triangle | **500³ uint8** | 559×501 | **103.7** |
-| Fast, oblique triangle | 750³ uint8 | 838×751 | 20.7 |
-| Fast, oblique triangle | 500³ uint16 | 559×501 | 51.1 |
-| Fast, oblique triangle | 500³ uint32 | 559×501 | 48.3 |
-| Fast, axis-aligned square | 500³ uint8 | 499×500 | 43.9 |
-| Reference (loops), oblique triangle | 128³ uint8 | 143×129 | 9.8 |
+| Fast, oblique triangle | 128³ uint8 | 143×129 | 1,452 |
+| Fast, oblique triangle | 256³ uint8 | 286×257 | 332 |
+| Fast, oblique triangle | **500³ uint8** | 559×501 | **89.7** |
+| Fast, oblique triangle | 750³ uint8 | 838×751 | 35.6 |
+| Fast, oblique triangle | 500³ uint16 | 559×501 | 91.0 |
+| Fast, oblique triangle | 500³ uint32 | 559×501 | 91.2 |
+| Fast, axis-aligned square | 500³ uint8 | 499×500 | 63.0 |
+| Reference (loops), oblique triangle | 128³ uint8 | 143×129 | 27.6 |
 
-On a quiet machine the same 500³ oblique plane reached **137 FPS (uint8)** and **147 FPS
-(uint16)**. The same code measured right after a busy period gave as little as ~50 FPS, so
-single numbers vary by up to 3× with CPU load and turbo frequency; the minimum over all runs
-was still above 30 FPS.
+Stability: five repeated 1-second runs of each 500³ case gave 61–93 FPS (medians 72–93), so
+the slowest run is still 2× the requirement. Single numbers depend on CPU load and power
+mode: with the browser and IDE busy, runs dropped to ~45 FPS; short bursts at full turbo
+reached ~140 FPS.
 
 Earlier versions on the same 500³ oblique plane:
 
@@ -75,12 +73,12 @@ Earlier versions on the same 500³ oblique plane:
 | First implementation (Python loops, accumulating `p += dp`) | 2–5 |
 | First NumPy version (H×W×3 float64 array, boolean scatter) | ~29 |
 | Gather, float32 per axis, int32 flat index, `take` | 60–175 |
-| Final `FastProjector`: the same with float64 coordinates (identical to the reference) | 44–147 |
+| Final `FastProjector`: the same with float64 coordinates (identical to the reference) | 61–93 (idle) |
 
 ## Conclusions
 
-* **The requirement is met:** 44–147 FPS on 500³ depending on CPU load (requirement ≥ 30),
-  above 100 FPS on a quiet machine. It is tested automatically (`TestPerformance`).
+* **The requirement is met:** 61–93 FPS on 500³ on an idle machine (requirement ≥ 30, a
+  2–3× margin), close to the 100 FPS target. It is tested automatically (`TestPerformance`).
 * **Correctness was preferred over the last 15%:** float32 coordinates were faster but differed
   from the reference by one pixel on some long planes. float64 makes the two identical.
 * **Run time depends on the number of output pixels, not on the volume:** MRHead frames
