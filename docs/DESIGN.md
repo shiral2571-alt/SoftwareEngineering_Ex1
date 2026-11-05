@@ -43,7 +43,7 @@ classDiagram
     }
     class Volume {
         +from_nrrd(path)$ Volume
-        +data (read-only)
+        +data : read-only ndarray
         +header
         +shape
         +dtype
