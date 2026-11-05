@@ -75,6 +75,18 @@ class TestPlaneValidation(unittest.TestCase):
         with self.assertRaises(ValueError):
             Plane.triangle([0, 0, np.nan], [3, 4, 0], [-3, 4, 0])
 
+    def test_trapezoid_top_not_parallel_to_base(self):
+        # legs a1->b = (0,5) and a2->c = (3,4) are both 5 long, the top (3,1) is
+        # shorter than the base (6,0), all in z = 0, but the top is tilted
+        with self.assertRaisesRegex(ValueError, "parallel"):
+            Plane.trapezoid(a1=[0, 0, 0], a2=[3, 1, 0], b=[0, 5, 0], c=[6, 5, 0])
+
+    def test_trapezoid_with_crossing_legs(self):
+        # same points as a valid rectangle, but a2 and a1 swapped: the legs cross
+        Plane.trapezoid([0, 0, 0], [4, 0, 0], [0, 5, 0], [4, 5, 0])
+        with self.assertRaisesRegex(ValueError, "cross"):
+            Plane.trapezoid([4, 0, 0], [0, 0, 0], [0, 5, 0], [4, 5, 0])
+
     def test_side_shorter_than_one_voxel(self):
         # int(Dab) == 0 would give an image with no rows
         with self.assertRaises(ValueError):

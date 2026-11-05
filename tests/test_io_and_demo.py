@@ -7,8 +7,15 @@ import unittest
 import numpy as np
 
 from projection import VideoWriter, pad_to_size, read_planes
+from projection.plane_reader import read_plane_rows
 
 import Ex0
+
+LECTURER_EXAMPLE = ("Number of Points (3 or 4),x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4\r\n"
+                    "3,200,200,0,0,200,400,400,200,400,,,\r\n"
+                    "4,200,0,0,200,0,500,200,400,0,200,400,500\r\n"
+                    "3,200,200,-30,-50,200,400,400,250,400,,,\r\n"
+                    "4,200,50,0,200,0,500,200,350,0,200,400,500")
 
 
 class TempDirTestCase(unittest.TestCase):
@@ -57,12 +64,33 @@ class TestReadPlanes(TempDirTestCase):
                                         " 0 , 0 ,0, 3,4,0 ,-3,4,0 \r\n")
         self.assertEqual(len(read_planes(path)), 3)
 
-    def test_trailing_comma_is_an_error(self):
-        for text, line in [("0,0,0,3,4,0,-3,4,0\n0,0,0,3,4,0,-3,4,0,\n", "line 2"),
-                           ("0,0,0,3,4,0,-3,4,0,\n", "line 1")]:   # not mistaken for a header
+    def test_empty_value_inside_a_row_is_an_error(self):
+        for text, line in [("0,0,0,3,4,0,-3,4,0\n0,0,0,3,,0,-3,4,0\n", "line 2"),
+                           ("0,0,,3,4,0,-3,4,0\n", "line 1")]:   # not mistaken for a header
             path = self.write_file("p.csv", text)
             with self.subTest(text=text), self.assertRaisesRegex(ValueError, line):
                 read_planes(path)
+
+    def test_lecturer_format(self):
+        # the example file linked in the assignment: a count column, (a1, b, a2, c)
+        # order for trapezoids, empty x4,y4,z4 for triangles; row 4 is not isosceles
+        path = os.path.join(self.dir, "lecturer.csv")
+        with open(path, "wb") as file:          # keep the CRLF line ends exactly
+            file.write(LECTURER_EXAMPLE.encode())
+        rows = read_plane_rows(path)
+        self.assertEqual([r.line_number for r in rows], [2, 3, 4, 5])
+        self.assertEqual([r.plane is not None for r in rows], [True, True, False, True])
+        self.assertIn("Side lengths", rows[2].error)
+        trapezoid = rows[3].plane
+        np.testing.assert_array_equal(trapezoid.a1, [200, 50, 0])
+        np.testing.assert_array_equal(trapezoid.b, [200, 0, 500])
+        np.testing.assert_array_equal(trapezoid.a2, [200, 350, 0])
+        np.testing.assert_array_equal(trapezoid.c, [200, 400, 500])
+
+    def test_lecturer_format_count_must_match(self):
+        path = self.write_file("p.csv", "4,0,0,0,3,4,0,-3,4,0,,,\n")
+        with self.assertRaisesRegex(ValueError, "line 1"):
+            read_planes(path)
 
 
 class TestVideoWriter(unittest.TestCase):
@@ -154,7 +182,23 @@ class TestDemoEndToEnd(TempDirTestCase):
     def assert_clean_error(self, *args):
         code, _, err = self.run_main(*args)
         self.assertEqual(code, 1)
-        self.assertTrue(err.startswith("Error:"), err)
+        self.assertIn("Error:", err)
+        self.assertNotIn("Traceback", err)
+
+    def test_lecturer_example_file(self):
+        import imageio.v2 as imageio
+        csv_path = os.path.join(self.dir, "lecturer.csv")
+        with open(csv_path, "wb") as file:
+            file.write(LECTURER_EXAMPLE.encode())
+        mp4_path = os.path.join(self.dir, "out.mp4")
+
+        code, out, err = self.run_main(self.make_volume(), csv_path, mp4_path)
+
+        self.assertEqual(code, 0)
+        self.assertIn("line 4", err)            # the non-isosceles triangle is reported
+        self.assertIn("4 (1 invalid)", out)
+        with imageio.get_reader(mp4_path) as reader:
+            self.assertEqual(reader.count_frames(), 4)   # still one frame per row
 
     def test_corrupt_nrrd_file(self):
         csv_path = self.write_file("planes.csv", "0,0,0,3,4,0,-3,4,0\n")

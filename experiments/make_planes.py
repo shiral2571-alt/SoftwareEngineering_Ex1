@@ -43,11 +43,21 @@ def triangle(center, across, width):
             apex + HEIGHT * DOWN + width / 2 * across]
 
 
+HEADER = "Number of Points (3 or 4),x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4\n"
+
+
 def write_csv(name, planes):
+    """Write planes ([a, b, c] or [a1, a2, b, c]) in the lecturer's CSV format:
+    3,a,b,c,,, for a triangle and 4,a1,b,a2,c for a trapezoid."""
     path = os.path.join(DATA_DIR, name)
     with open(path, "w") as file:
+        file.write(HEADER)
         for points in planes:
-            file.write(",".join(f"{v:.4f}" for p in points for v in p) + "\n")
+            if len(points) == 4:
+                a1, a2, b, c = points
+                points = [a1, b, a2, c]
+            values = [f"{v:.4f}" for p in points for v in p] + [""] * 3 * (4 - len(points))
+            file.write(",".join([str(len(points))] + values) + "\n")
     print(f"{path}: {len(planes)} planes")
 
 

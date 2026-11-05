@@ -133,7 +133,15 @@ class Plane:
             raise ValueError("The points are collinear and do not define a plane")
 
         if not np.array_equal(a1, a2):
-            if np.linalg.norm(a2 - a1) > np.linalg.norm(c - b) + EPS:
+            top, base = a2 - a1, c - b
+            if np.linalg.norm(top) > np.linalg.norm(base) + EPS:
                 raise ValueError("dist(a1,a2) must be <= dist(b,c)")
-            if abs(np.dot(normal, a2 - a1)) / normal_length >= EPS:
+            if abs(np.dot(normal, top)) / normal_length >= EPS:
                 raise ValueError("All 4 points must lie on the same plane")
+            if np.linalg.norm(top) > EPS:   # a1 ~ a2 behaves like a triangle
+                top_dir, base_dir = top / np.linalg.norm(top), base / np.linalg.norm(base)
+                if np.linalg.norm(np.cross(top_dir, base_dir)) >= EPS:
+                    raise ValueError("The top a1->a2 must be parallel to the base b->c")
+                if np.dot(top_dir, base_dir) < 0:
+                    raise ValueError("The legs a1->b and a2->c cross each other "
+                                     "(a1->a2 and b->c point in opposite directions)")

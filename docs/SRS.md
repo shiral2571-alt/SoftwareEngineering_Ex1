@@ -50,7 +50,7 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 |---|---|
 | FR-1 | The system shall load a 3D volume from an NRRD file. |
 | FR-2 | The system shall accept volumes with `1 ≤ sx, sy, sz < 2^10` and 8/16/32-bit integer voxels (other numeric types are accepted too). Other shapes are rejected. |
-| FR-3 | The system shall read planes from a CSV file, one plane per row: 9 values (triangle `a,b,c`) or 12 values (trapezoid `a1,a2,b,c`), separated by commas, semicolons, tabs or spaces. Blank lines are ignored and a first row containing letters is treated as a header. |
+| FR-3 | The system shall read planes from a CSV file in the format of the lecturer's example (`data/lecturer_example.csv`), one plane per row: the number of points followed by the coordinates, `3,a,b,c` (empty `x4,y4,z4`) for a triangle or `4,a1,b,a2,c` for a trapezoid (legs: point 1 → point 2 and point 3 → point 4). Values may be separated by commas, semicolons or tabs. Blank lines are ignored and a first row containing letters is treated as a header. Rows of only 9 (`a,b,c`) or 12 (`a1,a2,b,c`) numbers, the format of the first version, are also accepted. |
 
 ### Validation
 | ID | Requirement |
@@ -58,8 +58,8 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 | FR-4 | Each point shall have exactly 3 finite coordinates. |
 | FR-5 | Leg lengths shall satisfy `|dist(a1,b) − dist(a2,c)| < EPS`, and be at least 1 voxel. Legs and base shall be at most 4096 voxels. |
 | FR-6 | The points shall not be collinear (they must span a plane). |
-| FR-7 | For a trapezoid: `dist(a1,a2) ≤ dist(b,c)` (+EPS), and `a2` lies within EPS of the plane through `a1, b, c`. |
-| FR-8 | An invalid plane shall be reported with its CSV line number and the reason, and the program shall exit with code 1 without writing a video. |
+| FR-7 | For a trapezoid: `dist(a1,a2) ≤ dist(b,c)` (+EPS); `a2` lies within EPS of the plane through `a1, b, c`; the top `a1→a2` is parallel to the base `b→c` (sine of the angle < EPS); and the legs do not cross (`a1→a2` and `b→c` point the same way). |
+| FR-8 | An invalid row shall be reported as a warning with its CSV line number and the reason, and get a black frame, so the video still has one frame per row. If no row is valid, the program shall exit with code 1 without writing a video. |
 
 ### Projection
 | ID | Requirement |
@@ -107,3 +107,4 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 | D8 | Video intensity mapping | Global window [min, 99.5th percentile] | Consistent gray levels between frames, good contrast |
 | D9 | Frames of different sizes | Center-pad to a common size (multiple of 16) | Video requires a fixed size; scaling would distort the geometry |
 | D10 | Very small or very large planes | Reject legs < 1 voxel and sides > 4096 voxels | Legs < 1 give `⌊Dab⌋ = 0` rows (an empty image); 4096 is about twice the diagonal of the largest allowed volume, and larger planes would need gigabytes of memory |
+| D11 | An invalid row in the CSV | Warning, black frame, continue | The lecturer's example contains a non-isosceles triangle (row 4). Stopping would give no video at all; skipping the row would break "one frame per row, in order". |

@@ -4,7 +4,13 @@
 
 A plane is given as an isosceles **trapezoid** `(a1, a2, b, c)` with equal legs `a1→b` and
 `a2→c`. A **triangle** `(a, b, c)` is the special case `a1 = a2 = a`, so both cases share one
-algorithm.
+algorithm. In the CSV a trapezoid row lists the points as `a1, b, a2, c` (the lecturer's
+format); internally they are kept as `(a1, a2, b, c)`.
+
+The algorithm assumes the drawing below: the top `a1→a2` is parallel to the base `b→c` and
+points the same way, so every row `a1(y)→a2(y)` is parallel to the base and the legs do not
+cross. A trapezoid with equal legs but a tilted top, or with `a1` and `a2` swapped (crossing
+legs), would still produce an image, but a distorted one, so `Plane` rejects both (SRS FR-7).
 
 ```
         a1 ---- a2            a1 = a2

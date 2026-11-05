@@ -24,11 +24,13 @@ Requirement: at least 30 frames per second on a 500×500×500 volume.
 ```bash
 pip install -r requirements.txt
 python Ex0.py data/MRHead_1.nrrd data/planes_tumble.csv tumble.mp4
+python Ex0.py data/MRHead_1.nrrd data/lecturer_example.csv lecturer.mp4 --fps 1
 python -m unittest -v
 ```
 
-CSV format: one plane per row, 9 numbers for a triangle (`a, b, c`) or 12 numbers for a
-trapezoid (`a1, a2, b, c`).
+CSV format: the lecturer's example file ([data/lecturer_example.csv](data/lecturer_example.csv)).
+One plane per row: `3,a,b,c` (with empty columns at the end) for a triangle, or
+`4,a1,b,a2,c` for a trapezoid. An invalid row is reported and gets a black frame.
 
 ## Project structure
 

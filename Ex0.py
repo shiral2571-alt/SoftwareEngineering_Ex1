@@ -7,13 +7,17 @@ import argparse
 import sys
 import time
 
-from projection import FastProjector, Volume, VideoWriter, read_planes
+import numpy as np
+
+from projection import FastProjector, Volume, VideoWriter
+from projection.plane_reader import read_plane_rows
 
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("nrrd", help="3D volume in NRRD format")
-    parser.add_argument("csv", help="planes: one per row, 9 (a,b,c) or 12 (a1,a2,b,c) numbers")
+    parser.add_argument("csv", help="planes, one per row: 3,a,b,c or 4,a1,b,a2,c "
+                                    "(the lecturer's format)")
     parser.add_argument("mp4", help="output video, one frame per plane")
     parser.add_argument("--fps", type=float, default=10, help="video frame rate (default: 10)")
     return parser.parse_args(argv)
@@ -28,15 +32,25 @@ def main(argv=None) -> int:
         volume = Volume.from_nrrd(args.nrrd)
         print(f"Volume: {volume.shape} {volume.dtype}")
 
-        planes = read_planes(args.csv)
-        print(f"Planes: {len(planes)}")
+        rows = read_plane_rows(args.csv)
+        invalid = [row for row in rows if row.plane is None]
+        for row in invalid:
+            print(f"Warning: {args.csv}, line {row.line_number}: {row.error} "
+                  "(this frame will be black)", file=sys.stderr)
+        if len(invalid) == len(rows):
+            raise ValueError(f"{args.csv}: no valid planes")
+        print(f"Planes: {len(rows)} ({len(invalid)} invalid)")
 
+        # one frame per CSV row, in order; an invalid row gets a black frame
         projector = FastProjector()
+        black = np.zeros((1, 1), dtype=volume.dtype)
         start = time.perf_counter()
-        frames = [projector.project(volume, plane) for plane in planes]
+        frames = [projector.project(volume, row.plane) if row.plane is not None else black
+                  for row in rows]
         elapsed = max(time.perf_counter() - start, 1e-9)
-        print(f"Projected {len(frames)} frames in {elapsed:.3f}s "
-              f"({len(frames) / elapsed:.1f} fps)")
+        projected = len(rows) - len(invalid)
+        print(f"Projected {projected} frames in {elapsed:.3f}s "
+              f"({projected / elapsed:.1f} fps)")
 
         VideoWriter(fps=args.fps).write(frames, args.mp4)
         print(f"Saved: {args.mp4}")
