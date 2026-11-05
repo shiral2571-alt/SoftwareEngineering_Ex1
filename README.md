@@ -41,7 +41,7 @@ tests/          unit, performance and end-to-end tests
 data/           MRHead_1.nrrd and plane CSV files
 experiments/    scripts that produced the results
 results/        output video and benchmark
-docs/           SRS, algorithm, testing, dataset, experiment
+docs/           SRS, algorithm, design, testing, dataset, experiment
 ```
 
 ## Results
@@ -57,6 +57,7 @@ The video is [results/tumble.mp4](results/tumble.mp4). Details are in [docs/EXPE
 
 * [SRS](docs/SRS.md)
 * [Algorithm](docs/ALGORITHM.md)
+* [Design](docs/DESIGN.md)
 * [Testing strategy](docs/TESTING.md)
 * [Dataset](docs/DATASET.md)
 * [Experiment](docs/EXPERIMENT.md)
