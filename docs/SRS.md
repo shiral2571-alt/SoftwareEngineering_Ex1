@@ -73,7 +73,7 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 |---|---|
 | FR-12 | The system shall write an mp4 file with exactly one frame per CSV row, in CSV order. |
 | FR-13 | Frames shall be converted to 8-bit gray with one global intensity window for the whole video (minimum value to the 99.5th percentile), so equal voxel values look the same in every frame. NaN voxels (float volumes) are shown black. |
-| FR-14 | Frames of different sizes shall be centered on a common canvas (padded with 0) whose sides are multiples of 16. |
+| FR-14 | Frames of different sizes shall be centered on a common canvas (padded with 0) whose sides are multiples of 16. Rows and columns that are black in every frame (parts of planes outside the volume) are then cropped, with the same crop for all frames; this changes only the display, not E. |
 | FR-15 | The program shall print the volume shape/type, the number of planes, the projection time and FPS. |
 
 ### Command-line interface

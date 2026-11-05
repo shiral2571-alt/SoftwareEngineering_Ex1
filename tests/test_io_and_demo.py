@@ -127,6 +127,21 @@ class TestVideoWriter(unittest.TestCase):
         self.assertEqual(image[0, 0], 0)
         self.assertEqual(image[0, 1], 255)
 
+    def test_crop_black_margins_keeps_frames_aligned(self):
+        from projection.video import crop_black_margins
+        a = np.zeros((64, 64), np.uint8)
+        b = np.zeros((64, 64), np.uint8)
+        a[10, 20] = 255                   # content in different places of the two frames
+        b[30, 40] = 255
+        black = np.zeros((64, 64), np.uint8)
+        cropped = crop_black_margins([a, black, b])
+        self.assertEqual({img.shape for img in cropped}, {(32, 32)})   # 21x21 -> padded to 32
+        (ya, xa), = np.argwhere(cropped[0])
+        (yb, xb), = np.argwhere(cropped[2])
+        self.assertEqual((yb - ya, xb - xa), (20, 20))                 # same offset as before
+        self.assertFalse(cropped[1].any())
+        self.assertEqual(crop_black_margins([black])[0].shape, (64, 64))   # all black: unchanged
+
     def test_invalid_fps(self):
         for fps in (0, -5, 0.01, float("nan"), float("inf"), 10_000):
             with self.subTest(fps=fps), self.assertRaises(ValueError):

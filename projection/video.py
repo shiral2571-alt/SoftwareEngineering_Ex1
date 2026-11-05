@@ -16,6 +16,9 @@ class VideoWriter:
       would otherwise squeeze the rest of the image into dark grays.
     - Every frame is padded (centered) to a common size rounded up to a
       multiple of 16, as required by the H.264 encoder.
+    - Margins that are black in *every* frame (planes reaching far outside
+      the volume) are cropped, the same crop for all frames, so the content
+      is not lost in a mostly black video. This changes only the display.
     """
 
     def __init__(self, fps: float = 10, clip_percentile: float = 99.5):
@@ -28,7 +31,7 @@ class VideoWriter:
 
     def write(self, frames: list[np.ndarray], path: str) -> None:
         import imageio.v2 as imageio
-        images = self.prepare(frames, self.clip_percentile)
+        images = crop_black_margins(self.prepare(frames, self.clip_percentile))
         imageio.mimwrite(path, images, fps=self.fps, macro_block_size=1)
 
     @staticmethod
@@ -70,3 +73,18 @@ def pad_to_size(image: np.ndarray, height: int, width: int) -> np.ndarray:
         raise ValueError("Target size is smaller than the image")
     top, left = pad_h // 2, pad_w // 2
     return np.pad(image, ((top, pad_h - top), (left, pad_w - left)), mode="constant")
+
+
+def crop_black_margins(images: list[np.ndarray]) -> list[np.ndarray]:
+    """Crop rows/columns that are 0 in every image (one crop for all), then
+    pad back to a multiple of MACRO_BLOCK. All-black input is returned as is."""
+    used = np.logical_or.reduce([image > 0 for image in images])
+    rows, cols = np.flatnonzero(used.any(axis=1)), np.flatnonzero(used.any(axis=0))
+    if rows.size == 0:
+        return images
+    height = rows[-1] - rows[0] + 1
+    width = cols[-1] - cols[0] + 1
+    height += (-height) % MACRO_BLOCK
+    width += (-width) % MACRO_BLOCK
+    return [pad_to_size(image[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1], height, width)
+            for image in images]
