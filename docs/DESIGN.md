@@ -11,7 +11,7 @@ flowchart LR
     CSV[(file.csv)] -->|read_plane_rows| R["PlaneRow list<br/>(Plane or error)"]
     V --> P{{Projector}}
     R -->|valid planes| P
-    R -->|invalid rows| B[black frame + warning]
+    R -->|invalid rows| B["black frame<br/>and warning"]
     P -->|"E (2D array)"| F[frames]
     B --> F
     F -->|VideoWriter.write| MP4[(file.mp4)]
