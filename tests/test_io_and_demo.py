@@ -87,6 +87,14 @@ class TestReadPlanes(TempDirTestCase):
         np.testing.assert_array_equal(trapezoid.a2, [200, 350, 0])
         np.testing.assert_array_equal(trapezoid.c, [200, 400, 500])
 
+    def test_comment_lines_are_skipped(self):
+        path = self.write_file("p.csv", "Number of Points (3 or 4),x1,y1,z1\n"
+                                        "# frame 1: a triangle\n"
+                                        "3,0,0,0,3,4,0,-3,4,0,,,\n"
+                                        "  # indented comment\n"
+                                        "3,0,0,0,3,4,0,-3,4,0,,,\n")
+        self.assertEqual([r.line_number for r in read_plane_rows(path)], [3, 5])
+
     def test_lecturer_format_count_must_match(self):
         path = self.write_file("p.csv", "4,0,0,0,3,4,0,-3,4,0,,,\n")
         with self.assertRaisesRegex(ValueError, "line 1"):

@@ -7,7 +7,8 @@ The format is the lecturer's example file (one plane per row):
     4,a1x,a1y,a1z,bx,by,bz,a2x,a2y,a2z,cx,cy,cz
 
 so a triangle is (a, b, c) and a trapezoid is (a1, b, a2, c): the two legs
-are point 1 -> point 2 and point 3 -> point 4. Rows without the leading count
+are point 1 -> point 2 and point 3 -> point 4. Lines starting with '#' are
+comments. Rows without the leading count
 (9 numbers a,b,c or 12 numbers a1,a2,b,c, the format of the first version)
 are still accepted.
 """
@@ -37,8 +38,8 @@ def read_plane_rows(csv_path: str) -> list[PlaneRow]:
     rows = []
     with open(csv_path, "r", encoding="utf-8-sig") as file:
         for line_number, line in enumerate(file, start=1):
-            if not line.strip():
-                continue
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue                # blank line or comment
             if line_number == 1 and any(ch.isalpha() for ch in line):
                 continue                # header row, e.g. "Number of Points (3 or 4),x1,..."
             try:

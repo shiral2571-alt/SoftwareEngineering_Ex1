@@ -50,7 +50,7 @@ Python ≥ 3.10 on Windows, Linux or macOS, with numpy, pynrrd, imageio and imag
 |---|---|
 | FR-1 | The system shall load a 3D volume from an NRRD file. |
 | FR-2 | The system shall accept volumes with `1 ≤ sx, sy, sz < 2^10` and 8/16/32-bit integer voxels (other numeric types are accepted too). Other shapes are rejected. |
-| FR-3 | The system shall read planes from a CSV file in the format of the lecturer's example (`data/lecturer_example.csv`), one plane per row: the number of points followed by the coordinates, `3,a,b,c` (empty `x4,y4,z4`) for a triangle or `4,a1,b,a2,c` for a trapezoid (legs: point 1 → point 2 and point 3 → point 4). Values may be separated by commas, semicolons or tabs. Blank lines are ignored and a first row containing letters is treated as a header. Rows of only 9 (`a,b,c`) or 12 (`a1,a2,b,c`) numbers, the format of the first version, are also accepted. |
+| FR-3 | The system shall read planes from a CSV file in the format of the lecturer's example (`data/lecturer_example.csv`), one plane per row: the number of points followed by the coordinates, `3,a,b,c` (empty `x4,y4,z4`) for a triangle or `4,a1,b,a2,c` for a trapezoid (legs: point 1 → point 2 and point 3 → point 4). Values may be separated by commas, semicolons or tabs. Blank lines and lines starting with `#` (comments) are ignored, and a first row containing letters is treated as a header. Rows of only 9 (`a,b,c`) or 12 (`a1,a2,b,c`) numbers, the format of the first version, are also accepted. |
 
 ### Validation
 | ID | Requirement |
